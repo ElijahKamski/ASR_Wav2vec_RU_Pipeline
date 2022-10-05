@@ -1,0 +1,28 @@
+FROM ubuntu:18.04
+COPY fairseq/ ./fairseq
+
+RUN cd fairseq && pip install --editable ./
+RUN git clone https://github.com/NVIDIA/apex.git
+
+RUN cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" \
+  --global-option="--deprecated_fused_adam" --global-option="--xentropy" \
+  --global-option="--fast_multihead_attn" ./
+
+RUN git clone https://github.com/huggingface/transformers.git
+
+RUN pip install soundfile
+# /mnt/data2/asr-datasets/RuDevices/RuDevices/
+ENV model_path /home/model.pt
+ENV path_to_train_folder /home/train 
+# ./examples/wav2vec/config/pretraining
+ENV path_to_configs_folder /home/configs
+# wav2vec2_base_librispeech
+ENV config_name wav2vec2_base_librispeech
+
+WORKDIR /fairseq
+
+ENTRYPOINT ["fairseq-hydra-train", "task.data={$path_to_train_folder}", "model.w2v_path=${model_path}}", "=${path_to_configs_folder}", "--config-name=${config_name}"]
+
+# fairseq-hydra-train task.data=/mnt/data2/asr-datasets/RuDevices/RuDevices/ 
+# model.w2v_path=/home/mkiit/audio_khripkov_practice/fairseq/outputs/2022-07-28/14-09-37/checkpoints/checkpoint_89_400000.pt
+#  --config-dir ./examples/wav2vec/config/finetuning --config-name base_100h
